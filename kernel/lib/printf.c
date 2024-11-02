@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <cpu/io.h>
+#include <dev/pit.h>
 #include <dev/vga.h>
 #include <dev/serial.h>
 #include <lib/libc.h>
@@ -109,4 +110,16 @@ int printf(const char *fmt, ...) {
 
     va_end(args);
     return ret;
+}
+
+void mubsan_log(const char* fmt, ...) {
+    printf("[%5d.%04d] ", pit_ticks / 10000, pit_ticks % 10000);
+
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    
+    asm volatile ("cli");
+    for (;;) asm volatile ("hlt");
 }
