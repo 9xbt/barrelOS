@@ -2,6 +2,7 @@
 #include <dev/pic.h>
 #include <dev/pit.h>
 #include <dev/lapic.h>
+#include <dev/ioapic.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
@@ -70,6 +71,8 @@ void idt_set_entry(uint8_t index, uint32_t base, uint16_t selector, uint8_t type
 }
 
 void irq_register(uint8_t vector, void *handler) {
+    if (ioapic_enabled && vector <= 15)
+        ioapic_redirect_irq(0, vector + 32, vector, false);
     irq_handlers[vector] = handler;
 }
 

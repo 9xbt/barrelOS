@@ -20,6 +20,10 @@ void pit_install(void) {
     printf("[%5d.%04d] %s:%d: initialized PIT at %dkhz\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, PIT_FREQ / 1000);
 }
 
+void pit_reinstall() {
+    irq_register(0, pit_handler);
+}
+
 void pit_sleep(size_t ms) {
     size_t start_ticks = pit_ticks;
     size_t end_ticks = start_ticks + ms * 10;

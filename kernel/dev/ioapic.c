@@ -6,6 +6,8 @@
 #include <dev/ioapic.h>
 #include <lib/printf.h>
 
+bool ioapic_enabled = false;
+
 __attribute__((no_sanitize("undefined")))
 uint32_t ioapic_read(struct madt_ioapic* ioapic, uint8_t reg) {
     uint32_t* ioapic_addr = (uint32_t*)ioapic->address;
@@ -84,6 +86,9 @@ void ioapic_install() {
         ioapic_write(ioapic, IOAPIC_REDTBL + (2 * i), 0x10000 | (i + 32)); /* low 32 bits - mask the interrupt */
         ioapic_write(ioapic, IOAPIC_REDTBL + (2 * i) + 1, 0);              /* high 32 bits - redirect to cpu 0 */
     }
+
+    ioapic_enabled = true;
+    pit_reinstall();
 
     printf("[%5d.%04d] %s:%d: initialized I/O APIC with %d interrupts\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, count + 1);
 }

@@ -8,6 +8,7 @@
 extern size_t pit_ticks;
 
 void pit_install(void);
+void pit_reinstall();
 void pit_sleep(size_t ms);
 
 #endif
