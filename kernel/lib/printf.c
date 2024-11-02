@@ -6,8 +6,12 @@
 #include <dev/vga.h>
 #include <dev/serial.h>
 #include <lib/libc.h>
+#include <lib/console.h>
+
+extern struct console_t console;
 
 bool aux_output = false;
+bool use_framebuffer = false;
 
 void parse_num(char *s, int *ptr, uint32_t val, uint32_t base, int width, int zero_padding) {
     char buf[32];
@@ -93,8 +97,9 @@ int sprintf(char *s, const char *fmt, va_list args) {
 int vprintf(const char *fmt, va_list args) {
     char buf[1024] = {-1};
     int ret = sprintf(buf, fmt, args);
-    vga_puts(buf);
-
+    
+    if (use_framebuffer) console_write(&console, buf);
+    else vga_puts(buf);
     if (aux_output) serial_puts(buf);
 
     return ret;
@@ -106,8 +111,9 @@ int printf(const char *fmt, ...) {
 
     char buf[1024] = {-1};
     int ret = sprintf(buf, fmt, args);
-    vga_puts(buf);
 
+    if (use_framebuffer) console_write(&console, buf);
+    else vga_puts(buf);
     if (aux_output) serial_puts(buf);
 
     va_end(args);

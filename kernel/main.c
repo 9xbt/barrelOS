@@ -12,19 +12,32 @@
 #include <lib/libc.h>
 #include <lib/alloc.h>
 #include <lib/printf.h>
+#include <lib/console.h>
 #include <lib/multiboot.h>
 #include <sys/version.h>
+
+struct console_t console;
+struct framebuffer_t fb;
 
 void _main(struct multiboot_info_t *mboot_info, uint32_t mboot_magic) {
     if (strstr((char *)mboot_info->cmdline, "--aux-output"))
         aux_output = true;
+
+    if (mboot_info->vbe_mode != 0x3) {
+        use_framebuffer = true;
+        fb.addr = (uint32_t *)mboot_info->framebuffer_addr;
+        fb.width = mboot_info->framebuffer_width;
+        fb.height = mboot_info->framebuffer_height;
+        fb.pitch = mboot_info->framebuffer_pitch;
+        console_init(&console, &fb);
+    }
 
     gdt_install();
     idt_install();
     pic_install();
     pit_install();
     pmm_install(mboot_info);
-    vmm_install();
+    vmm_install(mboot_info);
     malloc_init();
     acpi_install();
     lapic_install();

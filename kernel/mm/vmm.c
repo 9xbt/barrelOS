@@ -4,6 +4,7 @@
 #include <dev/pit.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
+#include <lib/multiboot.h>
 
 uint32_t page_directory[1024] __attribute__((aligned(4096)));
 uint32_t first_page_table[1024] __attribute__((aligned(4096)));
@@ -86,7 +87,7 @@ void vmm_unmap(uintptr_t virt) {
 /*
  * vmm_install - initializes the virtual memory manager
  */
-void vmm_install() {
+void vmm_install(struct multiboot_info_t *mboot_info) {
     for (int i = 0; i < 1024; i++)
         page_directory[i] = PTE_WRITABLE; /* read/write */
     for (int i = 0; i < 1024; i++)
@@ -107,6 +108,9 @@ void vmm_install() {
         vmm_map(data, data - virt_base + phys_base, PTE_PRESENT | PTE_WRITABLE);
     for (uintptr_t bss = (uintptr_t)bss_start_ld; bss < (uintptr_t)bss_end_ld; bss += PAGE_SIZE)
         vmm_map(bss, bss - virt_base + phys_base, PTE_PRESENT | PTE_WRITABLE);
+    if (mboot_info->vbe_mode != 3) /* is in graphics mode */
+        for (uintptr_t vmem = (uintptr_t)mboot_info->framebuffer_addr; vmem < (uintptr_t)(mboot_info->framebuffer_addr + mboot_info->framebuffer_height * mboot_info->framebuffer_pitch); vmem += PAGE_SIZE)
+            vmm_map(vmem, vmem, PTE_PRESENT | PTE_WRITABLE);
 
     printf("[%5d.%04d] %s:%d: initialized VMM and enabled paging\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
 }

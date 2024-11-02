@@ -12,7 +12,6 @@ _start:
     push eax
     push ebx
 
-    call vga_clear
     call _main
 
     cli
