@@ -11,6 +11,11 @@
 #define LAPIC_TIMER_DISABLE 0x10000
 #define LAPIC_TIMER_CURCNT  0x390
 
+#include <stdbool.h>
+
+extern bool lapic_enabled;
+
 void lapic_install();
+void lapic_eoi();
 
 #endif

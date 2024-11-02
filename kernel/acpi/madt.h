@@ -17,12 +17,12 @@ struct acpi_madt {
     uint32_t flags;
 
     char table[];
-};
+} __attribute__((packed));
 
 struct madt_entry {
     uint8_t type;
     uint8_t length;
-};
+} __attribute__((packed));
 
 struct madt_ioapic {
     struct madt_entry entry;
@@ -30,7 +30,7 @@ struct madt_ioapic {
     uint8_t resv;
     uint32_t address;
     uint32_t gsi_base;
-};
+} __attribute__((packed));
 
 struct madt_iso {
     struct madt_entry entry;
@@ -38,13 +38,13 @@ struct madt_iso {
     uint8_t irq_source;
     uint32_t gsi;
     uint16_t flags;
-};
+} __attribute__((packed));
 
 struct madt_lapic_addr {
     struct madt_entry entry;
     uint16_t reserved;
     uint64_t lapic_address;
-};
+} __attribute__((packed));
 
 extern struct madt_ioapic *madt_ioapic_list[64];
 extern struct madt_iso *madt_iso_list[64];

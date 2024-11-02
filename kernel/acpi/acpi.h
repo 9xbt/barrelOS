@@ -11,7 +11,7 @@ struct acpi_rsdp {
     uint32_t rsdt_addr;
 } __attribute__((packed));
 
-typedef struct {
+struct acpi_xsdp {
     char signature[8];
     uint8_t checksum;
     char oem_id[6];
@@ -22,9 +22,9 @@ typedef struct {
     uint64_t xsdt_addr;
     uint8_t extended_checksum;
     uint8_t reserved[3];
-} __attribute__((packed)) acpi_xsdp;
+} __attribute__((packed));
 
-typedef struct {
+struct acpi_sdt {
     char signature[4];
     uint32_t length;
     uint8_t revision;
@@ -34,17 +34,17 @@ typedef struct {
     uint32_t oem_revision;
     uint32_t creator_id;
     uint32_t creator_revision;
-} __attribute__((packed)) acpi_sdt;
+} __attribute__((packed));
 
-typedef struct {
-    acpi_sdt sdt;
+struct acpi_rsdt {
+    struct acpi_sdt sdt;
     char table[];
-} acpi_rsdt;
+} __attribute__((packed));
 
-typedef struct {
-    acpi_sdt sdt;
+struct acpi_xsdt {
+    struct acpi_sdt sdt;
     char table[];
-} acpi_xsdt;
+} __attribute__((packed));
 
 extern void *acpi_root_sdt;
 

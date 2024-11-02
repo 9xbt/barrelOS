@@ -7,6 +7,8 @@
 #include <acpi/acpi.h>
 #include <lib/printf.h>
 
+bool lapic_enabled = false;
+
 __attribute__((no_sanitize("undefined")))
 uint32_t lapic_read(uint32_t reg) {
     return *((uint32_t*)(HIGHER_HALF(LAPIC_REGS) + reg));
@@ -22,14 +24,15 @@ void lapic_eoi() {
 }
 
 void lapic_install() {
-    if (!cpu_check_apic()) {
-        printf("[%5d.%04d] %s:%d: system does not have a LAPIC\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
+    if (!acpi_root_sdt || !cpu_check_apic()) {
+        printf("[%5d.%04d] %s:%d: system does not have a Local APIC\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
         return;
     }
 
     pic_disable();
     vmm_map(LAPIC_REGS, (uintptr_t)HIGHER_HALF(LAPIC_REGS), PTE_PRESENT | PTE_WRITABLE);
     lapic_write(LAPIC_SIV, lapic_read(LAPIC_SIV) | 0x100);
+    lapic_enabled = true;
 
     printf("[%5d.%04d] %s:%d: initialized Local APIC\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
 }

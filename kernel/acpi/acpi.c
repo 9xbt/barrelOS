@@ -15,11 +15,11 @@ void *acpi_find_table(const char *signature) {
     printf("[%5d.%04d] %s:%d: searching for signature '%s'\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature);
 
     if (!acpi_use_xsdt) {
-        acpi_rsdt *rsdt = (acpi_rsdt*)acpi_root_sdt;
+        struct acpi_rsdt *rsdt = (struct acpi_rsdt*)acpi_root_sdt;
         uint32_t entries = (rsdt->sdt.length - sizeof(rsdt->sdt)) / 4;
 
         for (uint32_t i = 0; i < entries; i++) {
-            acpi_sdt *sdt = (acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
+            struct acpi_sdt *sdt = (struct acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
             if (!memcmp(sdt->signature, signature, 4)) {
                 printf("[%5d.%04d] %s:%d: found '%s' at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
                 return (void*)sdt;
@@ -31,11 +31,11 @@ void *acpi_find_table(const char *signature) {
     }
     
     /* use xsdt */
-    acpi_xsdt *rsdt = (acpi_xsdt*)acpi_root_sdt;
+    struct acpi_xsdt *rsdt = (struct acpi_xsdt*)acpi_root_sdt;
     uint32_t entries = (rsdt->sdt.length - sizeof(rsdt->sdt)) / 8;
         
     for (uint32_t i = 0; i < entries; i++) {
-        acpi_sdt *sdt = (acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
+        struct acpi_sdt *sdt = (struct acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
         if (!memcmp(sdt->signature, signature, 4)) {
             printf("[%5d.%04d] %s:%d: found '%s' at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
             return (void*)sdt;
@@ -65,10 +65,10 @@ void acpi_install() {
     if (rsdp->revision != 0) {
         /* use xsdt */
         acpi_use_xsdt = true;
-        acpi_xsdp *xsdp = (acpi_xsdp*)rsdp;
-        acpi_root_sdt = (acpi_xsdt*)HIGHER_HALF(xsdp->xsdt_addr);
+        struct acpi_xsdp *xsdp = (struct acpi_xsdp*)rsdp;
+        acpi_root_sdt = (struct acpi_xsdt*)HIGHER_HALF(xsdp->xsdt_addr);
     } else {
-        acpi_root_sdt = (acpi_xsdt*)HIGHER_HALF(rsdp->rsdt_addr);
+        acpi_root_sdt = (struct acpi_xsdt*)HIGHER_HALF(rsdp->rsdt_addr);
     }
 
     vmm_map((uintptr_t)PHYSICAL(acpi_root_sdt), (uintptr_t)acpi_root_sdt, PTE_PRESENT);

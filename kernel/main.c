@@ -8,6 +8,7 @@
 #include <dev/pic.h>
 #include <dev/pit.h>
 #include <dev/lapic.h>
+#include <dev/ioapic.h>
 #include <lib/libc.h>
 #include <lib/alloc.h>
 #include <lib/printf.h>
@@ -27,6 +28,7 @@ void _main(struct multiboot_info_t *mboot_info, uint32_t mboot_magic) {
     malloc_init();
     acpi_install();
     lapic_install();
+    ioapic_install();
 
     printf("\nWelcome to \033[96mbarrelOS\033[0m!\n%s %d.%d %s %s %s\n",
         __kernel_name, __kernel_version_major,__kernel_version_minor,

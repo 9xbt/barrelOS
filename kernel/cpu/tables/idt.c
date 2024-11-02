@@ -1,6 +1,7 @@
 #include <cpu/tables/idt.h>
 #include <dev/pic.h>
 #include <dev/pit.h>
+#include <dev/lapic.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
@@ -100,5 +101,7 @@ void irq_handler(struct registers r) {
 
     if (handler != NULL)
         handler(&r);
-    pic_eoi(r.int_no);
+    
+    if (lapic_enabled) lapic_eoi();
+    else pic_eoi(r.int_no);
 }

@@ -95,6 +95,8 @@ int vprintf(const char *fmt, va_list args) {
     int ret = sprintf(buf, fmt, args);
     vga_puts(buf);
 
+    if (aux_output) serial_puts(buf);
+
     return ret;
 }
 
