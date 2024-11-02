@@ -1,5 +1,6 @@
 #include <cpu/tables/idt.h>
 #include <dev/pic.h>
+#include <dev/pit.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
@@ -56,7 +57,7 @@ void idt_install(void) {
     };
 
     asm volatile ("lidt %0" :: "m"(idt_descriptor));
-    printf("[%5d.%04d] %s:%d: initialized IDT at address 0x%x\n", 0, 0, __FILE__, __LINE__, (uint32_t)&idt_descriptor);
+    printf("[%5d.%04d] %s:%d: initialized IDT at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, (uint32_t)&idt_descriptor);
 }
 
 void idt_set_entry(uint8_t index, uint32_t base, uint16_t selector, uint8_t type) {

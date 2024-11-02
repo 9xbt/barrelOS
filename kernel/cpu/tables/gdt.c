@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <cpu/tables/gdt.h>
+#include <dev/pit.h>
 #include <lib/printf.h>
 
 struct gdt_entry gdt_entries[3];
@@ -18,7 +19,7 @@ void gdt_install(void) {
     };
 
     gdt_flush();
-    printf("[%5d.%04d] %s:%d: initialized GDT at address 0x%x\n", 0, 0, __FILE__, __LINE__, (uint32_t)&gdt_descriptor);
+    printf("[%5d.%04d] %s:%d: initialized GDT at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, (uint32_t)&gdt_descriptor);
 }
 
 void gdt_set_entry(uint8_t index, uint16_t limit, uint32_t base, uint8_t access, uint8_t gran) {

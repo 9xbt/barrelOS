@@ -1,4 +1,5 @@
 #include <cpu/io.h>
+#include <dev/pit.h>
 #include <lib/printf.h>
 
 #define PIC1            0x20        /* IO base address for master PIC */
@@ -36,7 +37,7 @@ void pic_install(void) {
     outb(PIC2_DAT, 0x00);
 
     asm volatile ("sti");
-    printf("[%5d.%04d] %s:%d: initialized PIC and enabled interrupts\n", 0, 0, __FILE__, __LINE__);
+    printf("[%5d.%04d] %s:%d: initialized PIC and enabled interrupts\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
 }
 
 void pic_eoi(uint8_t no) {
