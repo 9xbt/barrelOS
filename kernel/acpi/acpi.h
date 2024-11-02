@@ -44,6 +44,7 @@ typedef struct {
     char table[];
 } acpi_xsdt;
 
-void acpi_install();
+void  acpi_install();
+void *acpi_find_table(const char *signature);
 
 #endif

@@ -5,13 +5,14 @@
 #include <lib/libc.h>
 #include <lib/printf.h>
 #include <acpi/acpi.h>
+#include <acpi/madt.h>
 
 bool acpi_use_xsdt = false;
 void *acpi_root_sdt;
 
 __attribute__((no_sanitize("alignment")))
 void *acpi_find_table(const char *signature) {
-    printf("[%5d.%04d] %s:%d: searching for %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature);
+    printf("[%5d.%04d] %s:%d: searching for signature '%s'\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature);
 
     if (!acpi_use_xsdt) {
         acpi_rsdt *rsdt = (acpi_rsdt*)acpi_root_sdt;
@@ -20,7 +21,7 @@ void *acpi_find_table(const char *signature) {
         for (uint32_t i = 0; i < entries; i++) {
             acpi_sdt *sdt = (acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
             if (!memcmp(sdt->signature, signature, 4)) {
-                printf("[%5d.%04d] %s:%d: found %s at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
+                printf("[%5d.%04d] %s:%d: found '%s' at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
                 return (void*)sdt;
             }
         }
@@ -36,7 +37,7 @@ void *acpi_find_table(const char *signature) {
     for (uint32_t i = 0; i < entries; i++) {
         acpi_sdt *sdt = (acpi_sdt*)HIGHER_HALF(*((uint32_t*)rsdt->table + i));
         if (!memcmp(sdt->signature, signature, 4)) {
-            printf("[%5d.%04d] %s:%d: found %s at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
+            printf("[%5d.%04d] %s:%d: found '%s' at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, signature, (uint32_t)sdt);
             return (void*)sdt;
         }
     }
@@ -71,6 +72,6 @@ void acpi_install() {
     }
 
     vmm_map((uintptr_t)PHYSICAL(acpi_root_sdt), (uintptr_t)acpi_root_sdt, PTE_PRESENT);
-
-    acpi_find_table("APIC");
+    
+    madt_init();
 }
