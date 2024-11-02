@@ -81,8 +81,16 @@ void isr_handler(struct registers r) {
         return;
     }
 
+    printf("[%5d.%04d] %s:%d: catched isr: %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, isr_errors[r.int_no]);
+
+    if (r.int_no = 0x0e) {
+        uint32_t cr2;
+        asm volatile("mov %%cr2, %0" : "=r" (cr2));
+
+        printf("[%5d.%04d] %s:%d: faulting address: 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, cr2);
+    }
+
     asm volatile ("cli");
-    panic("%s", isr_errors[r.int_no]);
     for (;;) asm volatile ("hlt");
 }
 
