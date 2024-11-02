@@ -10,5 +10,7 @@
 typedef char symbol[];
 
 void vmm_install();
+void vmm_map(uintptr_t phys, uintptr_t virt, uint32_t flags);
+void vmm_unmap(uintptr_t virt);
 
 #endif

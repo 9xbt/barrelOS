@@ -1,11 +1,11 @@
 #include <stddef.h>
 #include <mm/pmm.h>
+#include <dev/pit.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
 #include <lib/bitmap.h>
 #include <lib/multiboot.h>
-#include <dev/pit.h>
 
 extern void *end;
 

@@ -34,8 +34,6 @@ void vmm_map(uintptr_t phys, uintptr_t virt, uint32_t flags) {
     uint32_t pdindex = virt >> 22;
     uint32_t ptindex = (virt >> 12) & 0x03FF;
 
-    printf("[%5d.%04d] %s:%d: mapping 0x%x (phys) to 0x%x (virt)\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, phys, virt);
-
     /* check if the page directory entry is present */
     if (!(page_directory[pdindex] & 0x1)) {
         uint32_t *new_pt = (uint32_t*)pmm_alloc(1); /* allocate a new page table if it doesn't exist */
@@ -50,6 +48,38 @@ void vmm_map(uintptr_t phys, uintptr_t virt, uint32_t flags) {
 
     pt[ptindex] = (phys & ~0xFFF) | flags; /* map the page */
     
+    vmm_flush_tlb(virt); /* flush the tlb entry */
+}
+
+/*
+ * vmm_unmap - unmaps a page
+ */
+void vmm_unmap(uintptr_t virt) {
+    uint32_t pdindex = virt >> 22;
+    uint32_t ptindex = (virt >> 12) & 0x03FF;
+
+    /* check if the page directory entry is present */
+    if (page_directory[pdindex] & 0x1) {
+        uint32_t *pt = (uint32_t*)(page_directory[pdindex] & ~0xFFF); /* get base address */
+
+        /* clear the page table entry */
+        pt[ptindex] = 0; /* unmap the page */
+
+        /* check if the page table is empty and free it */
+        bool empty = true;
+        for (int i = 0; i < 1024; i++) {
+            if (pt[i] & 0x1) { /* check if any entry is present */
+                empty = false;
+                break;
+            }
+        }
+
+        if (empty) {
+            pmm_free(pt, 1); /* free the page table if it is empty */
+            page_directory[pdindex] = 0x00000000; /* clear the pde*/
+        }
+    }
+
     vmm_flush_tlb(virt); /* flush the tlb entry */
 }
 
