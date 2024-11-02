@@ -1,6 +1,8 @@
 #ifndef __ACPI_H
 #define __ACPI_H
 
+#include <stdint.h>
+
 struct acpi_rsdp {
     char signature[8];
     uint8_t checksum;
@@ -43,6 +45,8 @@ typedef struct {
     acpi_sdt sdt;
     char table[];
 } acpi_xsdt;
+
+extern void *acpi_root_sdt;
 
 void  acpi_install();
 void *acpi_find_table(const char *signature);

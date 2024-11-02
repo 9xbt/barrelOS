@@ -37,7 +37,16 @@ void pic_install(void) {
     outb(PIC2_DAT, 0x00);
 
     asm volatile ("sti");
-    printf("[%5d.%04d] %s:%d: initialized PIC and enabled interrupts\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
+    printf("[%5d.%04d] %s:%d: initialized 8259 PIC and enabled interrupts\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
+}
+
+void pic_disable(void) {
+    outb(PIC1_DAT, 0xFF);
+    outb(PIC2_DAT, 0xFF);
+    outb(PIC1_CMD, 0x20);
+    outb(PIC2_CMD, 0x20);
+
+    printf("[%5d.%04d] %s:%d: disabled 8259 PIC\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
 }
 
 void pic_eoi(uint8_t no) {
