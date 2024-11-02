@@ -6,6 +6,9 @@
 #define DIV_CEILING(x, y) (x + (y - 1)) / y
 #define ALIGN_UP(x, y) DIV_CEILING(x, y) * y
 
+#define HIGHER_HALF(ptr) ((void*)((uintptr_t)ptr) + 0xC0000000)
+#define PHYSICAL(ptr) ((void*)((uintptr_t)ptr) - 0xC0000000)
+
 #include <stddef.h>
 #include <lib/multiboot.h>
 

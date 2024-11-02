@@ -1,6 +1,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <stdint.h>
+#include <acpi/acpi.h>
 #include <cpu/tables/gdt.h>
 #include <cpu/tables/idt.h>
 #include <dev/vga.h>
@@ -23,15 +24,9 @@ void _main(struct multiboot_info_t *mboot_info, uint32_t mboot_magic) {
     pmm_install(mboot_info);
     vmm_install();
     malloc_init();
+    acpi_install();
 
     printf("\nWelcome to \033[96mbarrelOS\033[0m!\n%s %d.%d %s %s %s\n",
         __kernel_name, __kernel_version_major,__kernel_version_minor,
         __kernel_build_date, __kernel_build_time, __kernel_arch);
-
-    uint8_t *buffer = kmalloc(21);
-    memcpy(buffer, "Hello, motherfuckers", 21);
-
-    printf("%s\n", buffer);
-
-    kfree(buffer);
 }

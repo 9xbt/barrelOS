@@ -23,8 +23,8 @@ __attribute__((no_sanitize("undefined")))
 void *heap_alloc(struct heap *h, uint32_t n) {
     uint32_t pages = DIV_CEILING(sizeof(struct heap_block) + n, PAGE_SIZE);
     
-    struct heap_block *block = (struct heap_block *)pmm_alloc(pages);
-    vmm_map((uintptr_t)block, (uintptr_t)(block + 0xC0000000), PTE_PRESENT | PTE_WRITABLE);
+    struct heap_block *block = (struct heap_block *)HIGHER_HALF(pmm_alloc(pages));
+    vmm_map((uintptr_t)PHYSICAL(block), (uintptr_t)block, PTE_PRESENT | PTE_WRITABLE);
     block->next = h->head;
     block->prev = h->head->prev;
     block->size = n;
@@ -46,6 +46,6 @@ void heap_free(void *ptr) {
     block->next->prev = block->prev;
     uint32_t pages = DIV_CEILING(sizeof(struct heap_block) + block->size, PAGE_SIZE);
 
-    pmm_free(block, pages);
-    vmm_unmap((uintptr_t)(block + 0xC0000000));
+    pmm_free(PHYSICAL(block), pages);
+    vmm_unmap((uintptr_t)block);
 }
