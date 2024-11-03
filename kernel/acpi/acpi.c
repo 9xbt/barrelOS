@@ -3,6 +3,7 @@
 #include <mm/vmm.h>
 #include <dev/pit.h>
 #include <lib/libc.h>
+#include <lib/panic.h>
 #include <lib/printf.h>
 #include <acpi/acpi.h>
 #include <acpi/madt.h>
@@ -57,10 +58,8 @@ void acpi_install() {
         }
     }
 
-    if (!rsdp) {
-        printf("[%5d.%04d] %s:%d: couldn't find ACPI\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__);
-        return;
-    }
+    if (!rsdp)
+        panic("couldn't find ACPI\n");
 
     if (rsdp->revision != 0) {
         /* use xsdt */
@@ -70,6 +69,8 @@ void acpi_install() {
     } else {
         acpi_root_sdt = (struct acpi_xsdt*)HIGHER_HALF(rsdp->rsdt_addr);
     }
+    printf("[%5d.%04d] %s:%d: ACPI version %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, rsdp->revision == 0 ? "1.0" : "2.0+");
+
 
     vmm_map((uintptr_t)PHYSICAL(acpi_root_sdt), (uintptr_t)acpi_root_sdt, PTE_PRESENT);
     

@@ -13,7 +13,7 @@ KERNEL_OBJS := $(addprefix bin/kernel/, $(KERNEL_S_SOURCES:.S=.S.o) $(KERNEL_C_S
 # Flags
 ASFLAGS = -f elf32 -g -F dwarf
 CCFLAGS = -m32 -std=gnu11 -ffreestanding -O0 -Wall -Wextra -nostdlib -I kernel -fno-stack-protector -Wno-unused-parameter -fno-stack-check -fno-lto -mno-mmx -mno-80387 -mno-sse -mno-sse2 -mno-red-zone -fsanitize=undefined
-QEMUFLAGS = -debugcon stdio -m 256M -cdrom bin/$(IMAGE_NAME).iso -rtc base=localtime -boot d -drive file=bin/fs.hdd,format=raw,if=none,id=nvm -device nvme,serial=nvme-1,drive=nvm -audiodev pa,id=speaker -machine pcspk-audiodev=speaker -enable-kvm
+QEMUFLAGS = -debugcon stdio -m 256M -cdrom bin/$(IMAGE_NAME).iso -rtc base=localtime -boot d -drive file=bin/fs.hdd,format=raw,if=none,id=nvm -device nvme,serial=nvme-1,drive=nvm -audiodev pa,id=speaker -machine pcspk-audiodev=speaker
 LDFLAGS = -m elf_i386 -Tkernel/linker.ld -z noexecstack
 
 # Output image name

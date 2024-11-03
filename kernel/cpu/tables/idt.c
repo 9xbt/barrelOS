@@ -85,7 +85,7 @@ void isr_handler(struct registers r) {
         return;
     }
 
-    printf("[%5d.%04d] %s:%d: catched isr: %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, isr_errors[r.int_no]);
+    printf("[%5d.%04d] %s:%d: %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, isr_errors[r.int_no]);
 
     if (r.int_no == 0x0e) {
         uint32_t cr2;

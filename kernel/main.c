@@ -14,6 +14,7 @@
 #include <lib/printf.h>
 #include <lib/console.h>
 #include <lib/multiboot.h>
+#include <sys/sched.h>
 #include <sys/version.h>
 
 struct console_t console;
@@ -42,8 +43,12 @@ void _main(struct multiboot_info_t *mboot_info, uint32_t mboot_magic) {
     acpi_install();
     lapic_install();
     ioapic_install();
+    lapic_calibrate_timer();
+    sched_install();
 
-    printf("\nWelcome to \033[96mbarrelOS\033[0m!\n%s %d.%d %s %s %s\n",
+    printf("\nWelcome to \033[96mbarrelOS\033[0m!\n%s %d.%d %s %s %s\n\n",
         __kernel_name, __kernel_version_major,__kernel_version_minor,
         __kernel_build_date, __kernel_build_time, __kernel_arch);
+    
+    lapic_ipi(0, 0x80);
 }

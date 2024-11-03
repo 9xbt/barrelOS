@@ -14,7 +14,6 @@ _start:
 
     call _main
 
-    cli
 hltLoop:
     hlt
     jmp hltLoop

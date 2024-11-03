@@ -1,7 +1,7 @@
 const char *__kernel_name = "barrel32";
 
 int __kernel_version_major = 0;
-int __kernel_version_minor = 1;
+int __kernel_version_minor = 2;
 
 const char *__kernel_arch = "i586";
 
