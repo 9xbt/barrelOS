@@ -2,16 +2,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <cpu/io.h>
-#include <dev/pit.h>
-#include <dev/vga.h>
 #include <dev/serial.h>
 #include <lib/libc.h>
 #include <lib/console.h>
 
 extern struct console_t console;
-
-bool aux_output = false;
-bool use_framebuffer = false;
 
 void parse_num(char *s, int *ptr, uint32_t val, uint32_t base, int width, int zero_padding) {
     char buf[32];
@@ -34,8 +29,8 @@ void parse_num(char *s, int *ptr, uint32_t val, uint32_t base, int width, int ze
     while (i > 0) s[(*ptr)++] = buf[--i];
 }
 
-void parse_hex(char *s, int *ptr, uint32_t val) {
-    int i = 8;
+void parse_hex(char *s, int *ptr, uint64_t val, bool lx) {
+    int i = lx ? 16 : 8;
     while (i-- > 0) {
         s[(*ptr)++] = "0123456789abcdef"[val >> (i * 4) & 0x0F];
     }
@@ -77,7 +72,15 @@ int sprintf(char *s, const char *fmt, va_list args) {
                     parse_num(s, &ptr, va_arg(args, int), 10, width, zero_padding);
                     break;
                 case 'x':
-                    parse_hex(s, &ptr, va_arg(args, uint32_t));
+                    parse_hex(s, &ptr, va_arg(args, uint32_t), false);
+                    break;
+                case 'l':
+                    fmt++;
+                    switch (*fmt) {
+                        case 'x':
+                            parse_hex(s, &ptr, va_arg(args, uint64_t), true);
+                            break;
+                    }
                     break;
                 case 's':
                     parse_string(s, &ptr, va_arg(args, char *));
@@ -98,9 +101,8 @@ int vprintf(const char *fmt, va_list args) {
     char buf[1024] = {-1};
     int ret = sprintf(buf, fmt, args);
     
-    if (use_framebuffer) console_write(&console, buf);
-    else vga_puts(buf);
-    if (aux_output) serial_puts(buf);
+    console_write(&console, buf);
+    serial_puts(buf);
 
     return ret;
 }
@@ -112,16 +114,15 @@ int printf(const char *fmt, ...) {
     char buf[1024] = {-1};
     int ret = sprintf(buf, fmt, args);
 
-    if (use_framebuffer) console_write(&console, buf);
-    else vga_puts(buf);
-    if (aux_output) serial_puts(buf);
+    console_write(&console, buf);
+    serial_puts(buf);
 
     va_end(args);
     return ret;
 }
 
 void mubsan_log(const char* fmt, ...) {
-    printf("[%5d.%04d] ", pit_ticks / 10000, pit_ticks % 10000);
+    printf("[%5d.%04d] ", 0, 0);
 
     va_list args;
     va_start(args, fmt);

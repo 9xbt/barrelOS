@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <acpi/acpi.h>
 #include <acpi/madt.h>
-#include <dev/pit.h>
 #include <lib/printf.h>
 
 struct madt_ioapic *madt_ioapic_list[64];
@@ -34,7 +33,7 @@ void madt_init() {
         i += entry->length;
     }
 
-    printf("[%5d.%04d] %s:%d: MADT located at address %x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, (uint32_t)madt);
-    printf("[%5d.%04d] %s:%d: found %d I/O APIC%s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, madt_ioapics, madt_ioapics == 1 ? "" : "s");
-    printf("[%5d.%04d] %s:%d: ISO count: %d\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, madt_isos);
+    printf("[%5d.%04d] %s:%d: MADT located at address %x\n", 0, 0, __FILE__, __LINE__, (uint32_t)madt);
+    printf("[%5d.%04d] %s:%d: found %d I/O APIC%s\n", 0, 0, __FILE__, __LINE__, madt_ioapics, madt_ioapics == 1 ? "" : "s");
+    printf("[%5d.%04d] %s:%d: ISO count: %d\n", 0, 0, __FILE__, __LINE__, madt_isos);
 }

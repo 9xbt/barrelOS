@@ -1,6 +1,10 @@
-#ifndef __SERIAL_H
-#define __SERIAL_H
+#pragma once
 
-void serial_puts(const char *str);
+#include <cpu/io.h>
+#include <lib/printf.h>
 
-#endif
+#define QEMU 0xE9
+#define COM1 0x3F8
+
+void serial_init();
+void serial_puts(char *str);

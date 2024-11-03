@@ -1,46 +1,61 @@
-ENTRY(_start)
+OUTPUT_FORMAT(elf64-x86-64)
+ENTRY(_main)
+
+PHDRS
+{
+    limine_requests PT_LOAD;
+    text PT_LOAD;
+    rodata PT_LOAD;
+    data PT_LOAD;
+}
 
 SECTIONS
 {
-    . = 2M;
+    . = 0xffffffff80000000;
+
+    .limine_requests : {
+        KEEP(*(.limine_requests_start))
+        KEEP(*(.limine_requests))
+        KEEP(*(.limine_requests_end))
+    } :limine_requests
+
+    . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     text_start_ld = .;
-    .text BLOCK(4K) : ALIGN(4K)
-    {
-        *(.multiboot)
-        *(.text.prologue)
-        *(.text)
-    }
+
+    .text : {
+        *(.text .text.*)
+    } :text
+
     text_end_ld = .;
 
+    . = ALIGN(CONSTANT(MAXPAGESIZE));
+
     rodata_start_ld = .;
-    .rodata BLOCK(4K) : ALIGN(4K)
-    {
-        *(.rodata)
-    }
+
+    .rodata : {
+        *(.rodata .rodata.*)
+    } :rodata
+
     rodata_end_ld = .;
 
+    . = ALIGN(CONSTANT(MAXPAGESIZE));
+
     data_start_ld = .;
-    .data BLOCK(4K) : ALIGN(4K)
-    {
-        *(.data)
-    }
+
+    .data : {
+        *(.data .data.*)
+    } :data
+
+    .bss : {
+        *(.bss .bss.*)
+        *(COMMON)
+    } :data
+
     data_end_ld = .;
 
-    bss_start_ld = .;
-    .bss BLOCK(4K) : ALIGN(4K)
-    {
-        *(COMMON)
-        *(.bss)
+    /DISCARD/ : {
+        *(.eh_frame*)
+        *(.note .note.*)
     }
-    bss_end_ld = .;
-
-    end = ALIGN(4K);
-
-    /DISCARD/ :
-	{
-		*(.comment)
-		*(.eh_frame)
-		*(.note.gnu.build-id)
-	}
 }

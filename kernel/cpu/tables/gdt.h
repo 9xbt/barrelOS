@@ -14,7 +14,7 @@ struct gdt_entry {
 
 struct gdtr {
     uint16_t size;
-    uint32_t offset;
+    uint64_t offset;
 } __attribute__((packed));
 
 void gdt_install(void);

@@ -1,12 +1,9 @@
 #include <cpu/tables/idt.h>
-#include <dev/pic.h>
-#include <dev/pit.h>
-#include <dev/lapic.h>
-#include <dev/ioapic.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
 
+__attribute__((aligned(0x10)))
 struct idt_entry idt_entries[256];
 struct idtr idt_descriptor;
 extern void *idt_int_table[];
@@ -50,29 +47,31 @@ const char* isr_errors[32] = {
 
 void idt_install(void) {
     for (uint16_t i = 0; i < 256; i++) {
-        idt_set_entry(i, (uint32_t)idt_int_table[i], 0x08, 0x8E);
+        idt_set_entry(i, (uint64_t)idt_int_table[i], 0x28, 0x8E);
     }
 
     idt_descriptor = (struct idtr) {
         .size = sizeof(struct idt_entry) * 256 - 1,
-        .offset = (uint32_t)idt_entries
+        .offset = (uint64_t)idt_entries
     };
 
     asm volatile ("lidt %0" :: "m"(idt_descriptor));
-    printf("[%5d.%04d] %s:%d: initialized IDT at address 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, (uint32_t)&idt_descriptor);
+    printf("[%5d.%04d] %s:%d: initialized IDT at address 0x%lx\n", 0, 0, __FILE__, __LINE__, (uint64_t)&idt_descriptor);
 }
 
-void idt_set_entry(uint8_t index, uint32_t base, uint16_t selector, uint8_t type) {
-    idt_entries[index].base_low = base & 0xFFFF;
-    idt_entries[index].selector = selector;
-    idt_entries[index].zero = 0x00;
-    idt_entries[index].type = type;
-    idt_entries[index].base_high = (base >> 16) & 0xFF;
+void idt_set_entry(uint8_t vector, uint64_t base, uint16_t selector, uint8_t type) {
+    idt_entries[vector].base_low  = base & 0xFFFF;
+    idt_entries[vector].selector  = selector;
+    idt_entries[vector].zero      = 0x00;
+    idt_entries[vector].type      = type;
+    idt_entries[vector].base_mid  = (base >> 16) & 0xFFFF;
+    idt_entries[vector].base_high = (base >> 32) & 0xFFFFFFFF;
+    idt_entries[vector].reserved  = 0x00000000;
 }
 
 void irq_register(uint8_t vector, void *handler) {
-    if (ioapic_enabled && vector <= 15)
-        ioapic_redirect_irq(0, vector + 32, vector, false);
+    //if (ioapic_enabled && vector <= 15)
+    //    ioapic_redirect_irq(0, vector + 32, vector, false);
     irq_handlers[vector] = handler;
 }
 
@@ -80,31 +79,23 @@ void irq_unregister(uint8_t vector) {
     irq_handlers[vector] = (void *)0;
 }
 
-void isr_handler(struct registers r) {
-    if (r.int_no == 0xff) {
+void isr_handler(struct registers *r) {
+    if (r->int_no == 0xff) {
         return;
     }
 
-    printf("[%5d.%04d] %s:%d: %s\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, isr_errors[r.int_no]);
-
-    if (r.int_no == 0x0e) {
-        uint32_t cr2;
-        asm volatile("mov %%cr2, %0" : "=r" (cr2));
-
-        printf("[%5d.%04d] %s:%d: faulting address: 0x%x\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, cr2);
-    }
-
     asm volatile ("cli");
+    printf("[%5d.%04d] %s:%d: %s\n", 0, 0, __FILE__, __LINE__, isr_errors[r->int_no]);
     for (;;) asm volatile ("hlt");
 }
 
-void irq_handler(struct registers r) {
+void irq_handler(struct registers *r) {
     void(*handler)(struct registers *);
-    handler = irq_handlers[r.int_no - 32];
+    handler = irq_handlers[r->int_no - 32];
 
     if (handler != NULL)
-        handler(&r);
+        handler(r);
     
-    if (lapic_enabled) lapic_eoi();
-    else pic_eoi(r.int_no);
+    //if (lapic_enabled) lapic_eoi();
+    //else pic_eoi(r.int_no);
 }

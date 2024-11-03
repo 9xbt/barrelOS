@@ -1,6 +1,5 @@
 #include <lib/libc.h>
 #include <lib/console.h>
-#include <lib/printf.h>
 
 void fb_draw_char(struct framebuffer_t *fb, uint32_t x, uint32_t y, uint8_t c, uint32_t fore, uint32_t back) {
     for (int i = 0; i < 16; i++) {

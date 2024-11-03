@@ -1,78 +1,61 @@
 #include <stddef.h>
 #include <mm/pmm.h>
-#include <dev/pit.h>
 #include <lib/libc.h>
 #include <lib/panic.h>
 #include <lib/printf.h>
 #include <lib/bitmap.h>
-#include <lib/multiboot.h>
+#include <lib/limine.h>
 
-extern void *end;
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0
+};
 
-uint8_t *pmm_bitmap = NULL;
-uint32_t pmm_last_page = 0;
-uint32_t pmm_used_pages = 0;
-uint32_t pmm_page_count = 0;
-uint32_t pmm_usable_mem = 0;
-uint32_t pmm_bitmap_size = 0;
+extern uint64_t hhdm_offset;
+struct limine_memmap_response* pmm_memmap = NULL;
 
-void pmm_install(struct multiboot_info_t *mbd) {
-    /* check bit 6 to see if we have a valid memory map */
-    if(!(mbd->flags >> 6 & 0x1)) {
-        panic("invalid multiboot memory map");
+uint8_t* pmm_bitmap = NULL;
+uint64_t pmm_last_page = 0;
+uint64_t pmm_used_pages = 0;
+uint64_t pmm_page_count = 0;
+
+void pmm_install() {
+    pmm_memmap = memmap_request.response;
+    struct limine_memmap_entry** entries = pmm_memmap->entries;
+    struct limine_memmap_entry* default_memmap = NULL;
+
+    uint64_t higher_address = 0;
+    uint64_t top_address = 0;
+
+    for (uint64_t i = 0; i < pmm_memmap->entry_count; i++) {
+        if (entries[i]->type != LIMINE_MEMMAP_USABLE) continue;
+        if (default_memmap == NULL || entries[i]->length > default_memmap->length) default_memmap = entries[i];
+        
+        top_address = entries[i]->base + entries[i]->length;
+        if (top_address > higher_address) higher_address = top_address;
     }
 
-    uint32_t higher_address = 0;
-    uint32_t top_address = 0;
-    struct multiboot_memory_map_t *kernel_mmmt = NULL;
+    pmm_page_count = higher_address / PAGE_SIZE;
+    uint64_t bitmap_size = ALIGN_UP(pmm_page_count / 8, PAGE_SIZE);
 
-    for(uint32_t i = 0; i < mbd->mmap_length;
-        i += sizeof(struct multiboot_memory_map_t))
-    {
-        struct multiboot_memory_map_t* mmmt = 
-            (struct multiboot_memory_map_t*) (mbd->mmap_addr + i);
+    pmm_bitmap = (uint8_t*)HIGHER_HALF(default_memmap->base);
+    memset(pmm_bitmap, 0xFF, bitmap_size);
+    default_memmap->base += bitmap_size;
+    default_memmap->length -= bitmap_size;
 
-        if (mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {
-            if (mmmt->addr_low >= 0x100000 && kernel_mmmt == NULL) {
-                kernel_mmmt = mmmt;
-                pmm_usable_mem = kernel_mmmt->len_low;
-            }
-
-            top_address = mmmt->addr_low + mmmt->len_low;
-            if (top_address > higher_address) {
-                higher_address = top_address;
-            }
-        }
+    for (uint64_t i = 0; i < pmm_memmap->entry_count; i++) {
+        if (entries[i]->type != LIMINE_MEMMAP_USABLE) continue;
+        for (uint64_t o = 0; o < entries[i]->length; o += PAGE_SIZE)
+            bitmap_clear(pmm_bitmap, (entries[i]->base + o) / PAGE_SIZE);
     }
 
-    pmm_bitmap = (uint8_t *)&end;
-
-    pmm_page_count = kernel_mmmt->len_low / PAGE_SIZE;
-    pmm_bitmap_size = ALIGN_UP(pmm_page_count / 8, PAGE_SIZE);
-    memset(pmm_bitmap, 0xFF, pmm_bitmap_size);
-
-    kernel_mmmt->len_low -= (uint32_t)pmm_bitmap - kernel_mmmt->addr_low;
-    kernel_mmmt->addr_low = (uint32_t)pmm_bitmap + pmm_bitmap_size;
-
-    for(uint32_t i = 0; i < mbd->mmap_length;
-        i += sizeof(struct multiboot_memory_map_t))
-    {
-        struct multiboot_memory_map_t* mmmt = 
-            (struct multiboot_memory_map_t*) (mbd->mmap_addr + i);
-
-        for (uint32_t o = 0; o < mmmt->len_low; o += PAGE_SIZE) {
-            if (mmmt->type == MULTIBOOT_MEMORY_AVAILABLE && mmmt->addr_low >= 0x100000) {
-                bitmap_clear(pmm_bitmap, (mmmt->addr_low + o) / PAGE_SIZE);
-            }
-        }
-    }
-
-    printf("[%5d.%04d] %s:%d: initialized PMM with bitmap size of %d\n", pit_ticks / 10000, pit_ticks % 10000, __FILE__, __LINE__, pmm_bitmap_size);
+    printf("[%5d.%04d] %s:%d: initialized PMM with bitmap size of %d\n", 0, 0, __FILE__, __LINE__, bitmap_size);
 }
 
-uint32_t pmm_find_pages(uint32_t page_count) {
-    uint32_t pages = 0;
-    uint32_t first_page = pmm_last_page;
+uint64_t pmm_find_pages(uint64_t page_count) {
+    uint64_t pages = 0;
+    uint64_t first_page = pmm_last_page;
 
     while (pages < page_count) {
         if (pmm_last_page == pmm_page_count) {
@@ -82,7 +65,7 @@ uint32_t pmm_find_pages(uint32_t page_count) {
         if (!bitmap_get(pmm_bitmap, pmm_last_page + pages)) {
             pages++;
             if (pages == page_count) {
-                for (uint32_t i = 0; i < pages; i++) {
+                for (uint64_t i = 0; i < pages; i++) {
                     bitmap_set(pmm_bitmap, first_page + i);
                 }
 
@@ -99,45 +82,21 @@ uint32_t pmm_find_pages(uint32_t page_count) {
 }
 
 void *pmm_alloc(size_t page_count) {
-    uint32_t pages = pmm_find_pages(page_count);
+    uint64_t pages = pmm_find_pages(page_count);
     
     if (pages == 0) {
         pmm_last_page = 0;
         pages = pmm_find_pages(page_count);
     }
 
-    uint32_t phys_addr = pages * PAGE_SIZE;
+    uint64_t phys_addr = pages * PAGE_SIZE;
 
     return (void*)(phys_addr);
 }
 
 void pmm_free(void *ptr, size_t page_count) {
-    uint32_t page = (uint32_t)ptr / PAGE_SIZE;
+    uint64_t page = (uint64_t)ptr / PAGE_SIZE;
 
-    for (uint32_t i = 0; i < page_count; i++)
+    for (uint64_t i = 0; i < page_count; i++)
         bitmap_clear(pmm_bitmap, page + i);
-}
-
-uint32_t pmm_get_total_mem() {
-    return pmm_bitmap_size * PAGE_SIZE * 8;
-}
-
-uint32_t pmm_get_usable_mem() {
-    return pmm_usable_mem;
-}
-
-uint32_t pmm_get_used_mem() {
-    uint32_t used_bytes = 0;
-
-    for (uint32_t i = 0; i < pmm_bitmap_size; i++) {
-        if (pmm_bitmap[i] != 0) {
-            for (uint8_t bit = 0; bit < 8; bit++) {
-                if (pmm_bitmap[i] & (1 << bit)) {
-                    used_bytes += PAGE_SIZE;
-                }
-            }
-        }
-    }
-
-    return used_bytes;
 }

@@ -1,9 +1,8 @@
 #include <stdarg.h>
-#include <dev/pit.h>
 #include <lib/printf.h>
 
 void panic(const char *fmt, ...) {
-    printf("[%5d.%04d] kernel panic: ", pit_ticks / 10000, pit_ticks % 10000);
+    printf("[%5d.%04d] kernel panic: ", 0, 0);
 
     va_list args;
     va_start(args, fmt);

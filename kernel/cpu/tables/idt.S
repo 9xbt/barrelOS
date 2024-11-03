@@ -4,45 +4,83 @@ section .text
 [extern irq_handler]
 [global idt_int_table]
 
+%macro irq_pushad 0
+    push rax
+    push rcx
+    push rdx
+    push rbx
+    push rbp
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
+%endmacro
+
+%macro irq_popad 0
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdi
+    pop rsi
+    pop rbp
+    pop rbx
+    pop rdx
+    pop rcx
+    pop rax
+%endmacro
+
 %macro isr_no_err_stub 1
 int_stub%+%1:
     push 0
-    push dword %1
-    pushad
+    push %1
+    irq_pushad
 
+    mov rdi, rsp
     call isr_handler
 
-    popad
-    add esp, 8
-
-    iret
+    irq_popad
+    add rsp, 16
+    iretq
 %endmacro
 
 %macro isr_err_stub 1
 int_stub%+%1:
-    push dword %1
-    pushad
+    push %1
+    irq_pushad
 
+    mov rdi, rsp
     call isr_handler
 
-    popad
-    add esp, 8
+    irq_popad
 
-    iret
+    add rsp, 16
+    iretq
 %endmacro
 
 %macro irq_stub 1
 int_stub%+%1:
     push 0
-    push dword %1
-    pushad
+    push %1
+    irq_pushad
 
+    mov rdi, rsp
     call irq_handler
 
-    popad
-    add esp, 8
+    irq_popad
 
-    iret
+    add rsp, 16
+    iretq
 %endmacro
 
 isr_no_err_stub 0
@@ -89,6 +127,6 @@ section .data
 idt_int_table:
     %assign i 0
     %rep 256
-        dd int_stub%+i
+        dq int_stub%+i
         %assign i i+1
     %endrep
